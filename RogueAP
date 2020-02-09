@@ -85,7 +85,9 @@ StartConf (){
 	iptables -A FORWARD -i $wifi -p udp --dport 53 -j ACCEPT
 	iptables -A FORWARD -i $wifi -p tcp --dport 80 -d 10.0.0.1 -j ACCEPT
 	iptables -A FORWARD -i $wifi -j DROP
+	ifconfig $wifi down
 	macchanger -A $wifi
+	ifconfig $wifi up
 	#Inizializzo hostapd.conf
 	rm hostapd.conf -f
 	echo interface=$wifi >> hostapd.conf
@@ -121,7 +123,9 @@ RestoreOldConf(){
 	chown -R www-data:www-data /var/www
 	iptables -F
 	iptables -t nat -F
+	ifconfig $wifi down
 	macchanger -p $wifi
+	ifconfig $wifi up
 	echo 0 > /proc/sys/net/ipv4/ip_forward
 	/etc/init.d/network-manager restart > /dev/null
 	echo Chiusura avvenuta con successo.
