@@ -1,6 +1,6 @@
 # RogueAP
 
-This script is for testing only and I take no responsibility for misuse
+This script is for testing only and I take no responsibility for illegal use
 
 ## Supported Operating Systems:
 
