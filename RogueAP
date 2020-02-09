@@ -94,7 +94,7 @@ StartConf (){
 	#Inizializzo dnsmasq.conf
 	rm dnsmasq.conf -f
 	echo dhcp-range=10.0.0.2,10.0.0.100,255.255.255.0,12h >> dnsmasq.conf
-	echo address=/#/10.0.0.1 >> dnsmasq.conf
+	echo 'address=/#/10.0.0.1' >> dnsmasq.conf
 	echo no-resolv >> dnsmasq.conf
 	echo log-queries >> dnsmasq.conf
 	ifconfig $wifi 10.0.0.1
