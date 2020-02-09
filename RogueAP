@@ -124,7 +124,6 @@ RestoreOldConf(){
 	/etc/init.d/network-manager restart > /dev/null
 	echo Chiusura avvenuta con successo.
 	echo ""
-	unset dir
 }
 
 Main() {
