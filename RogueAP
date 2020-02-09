@@ -44,8 +44,8 @@ InstDip () {
 
 	if ! which apache2 > /dev/null; then
 		echo "apache2 not found!"
-        echo "installo apache2"
-        apt-get install -y apache2
+        	echo "installo apache2"
+        	apt-get install -y apache2
 	fi
 }
 
