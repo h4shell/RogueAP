@@ -15,5 +15,6 @@ git clone https://github.com/h4shell/RogueAP.git
 ## Usage
 ```
 cd RogueAP
+chmod +x RogueAP
 ./RogueAP
 ```
